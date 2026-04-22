@@ -1,0 +1,810 @@
+# Crash Course: C# · ASP.NET Core Web API · Blazor Server · CQRS
+> Tailored for developers who know Flutter, Firebase, Flask, and basic web fundamentals.
+> Goal: Understand the stack end-to-end, build a simple app, and deploy it.
+
+---
+
+## Stack Analogy Map (Your Knowledge → This Stack)
+
+| What you know | Equivalent here |
+|---|---|
+| Flutter widget tree | Blazor component tree (`.razor` files) |
+| Flutter MVVM: View / ViewModel / Repository / Service | C# MVVM: `.razor` markup / `@code {}` block / Repository class / Service class |
+| `ChangeNotifier` / Riverpod `Notifier` (ViewModel) | C# ViewModel class — or the `@code { }` block in a Blazor component |
+| Dart class / `async/await` | C# class / `async/await` (near-identical syntax) |
+| Flask route `@app.route(...)` | ASP.NET Controller `[HttpGet(...)]` or Minimal API `app.MapGet(...)` |
+| Firebase Firestore | Entity Framework Core + SQL Server / SQLite |
+| Provider / Riverpod state | Blazor cascading values, `StateHasChanged()`, or Fluxor |
+| Firebase Auth | ASP.NET Identity / JWT Bearer auth |
+| Flutter `pubspec.yaml` | .NET `*.csproj` + NuGet packages |
+| `pip install` / `requirements.txt` | `dotnet add package` / `*.csproj` |
+
+---
+
+## Phase 1 — C# Language Fundamentals (3–5 days)
+
+> If you know Dart, C# will feel immediately familiar. Focus on the deltas.
+
+### 1.1 Setup
+- Install [.NET 8 SDK](https://dotnet.microsoft.com/download) — `dotnet --version` to verify
+- Terminal install: 
+```bash
+# macOS (Terminal):
+brew install --cask dotnet-sdk
+```
+- IDE: **Visual Studio 2022** (Windows) or **VS Code + C# Dev Kit extension** (cross-platform)
+- Run your first program: `dotnet new console -n HelloCsharp && cd HelloCsharp && dotnet run`
+- Permanently make sure the .NET SDK is installed and is on the path:
+```bash
+# macOS (Terminal):
+echo 'export DOTNET_ROOT=$(brew --prefix dotnet)' >> ~/.zshrc
+source ~/.zshrc
+```
+
+### 1.2 Core Language Concepts
+
+#### Types & Variables
+```csharp
+// Like Dart, C# is strongly typed
+string name = "Kyle";
+int age = 30;
+var inferred = 3.14;          // compiler infers double — same as Dart's var
+const double Pi = 3.14159;    // compile-time constant (Dart: const)
+```
+
+#### Null Safety (same philosophy as Dart)
+```csharp
+string? maybeNull = null;     // ? means nullable — just like Dart
+string definite = maybeNull ?? "fallback";  // ?? is identical to Dart
+```
+
+#### Classes & Constructors
+```csharp
+// Primary constructor (C# 12) — feels like Dart
+public class Product(int id, string name, decimal price)
+{
+    public int Id { get; } = id;
+    public string Name { get; } = name;
+    public decimal Price { get; set; } = price;
+}
+```
+
+#### Records (immutable data — like Dart's copyWith pattern)
+```csharp
+public record ProductDto(int Id, string Name, decimal Price);
+// Auto-generates equality, ToString, and a `with` expression:
+var updated = product with { Price = 9.99m };
+```
+
+#### Async/Await (identical to Dart)
+```csharp
+// Flask: async def get_product(id): ...
+// C#:
+public async Task<Product> GetProductAsync(int id)
+{
+    var product = await _db.Products.FindAsync(id);
+    return product ?? throw new KeyNotFoundException();
+}
+// Task<T>  ≈  Dart's Future<T>
+// Task     ≈  Dart's Future<void>
+```
+
+#### LINQ (like Python list comprehensions / Flutter's `.where().map()`)
+```csharp
+// Python: [p for p in products if p.price > 10]
+var expensive = products
+    .Where(p => p.Price > 10)
+    .OrderBy(p => p.Name)
+    .Select(p => new { p.Id, p.Name })
+    .ToList();
+```
+
+#### Interfaces & Dependency Injection (key pattern everywhere)
+```csharp
+public interface IProductRepository
+{
+    Task<IEnumerable<Product>> GetAllAsync();
+}
+
+public class ProductRepository : IProductRepository
+{
+    public async Task<IEnumerable<Product>> GetAllAsync() { ... }
+}
+```
+
+#### MVVM Architecture (same pattern as Flutter's recommended architecture)
+
+You already use MVVM in Flutter. The same pattern applies in C# — it just looks slightly different depending on whether you're in a console app, ASP.NET, or Blazor.
+
+| Layer | Responsibility | Flutter | C# (Console / Blazor) |
+|---|---|---|---|
+| **View** | Render UI, delegate events to ViewModel | Widget / `build()` | `Program.cs` output / `.razor` HTML markup |
+| **ViewModel** | Hold UI state, expose commands | `ChangeNotifier` / Riverpod `Notifier` | ViewModel class / Blazor `@code { }` block |
+| **Repository** | Source of truth for app data | Repository class | Repository class (e.g. `IProductRepository`) |
+| **Service** | Wraps external APIs / I/O | Service class | Service class / EF Core |
+
+The key rules (same in Flutter and C#):
+- **Views** know only about the ViewModel — never the Repository or Service directly.
+- **ViewModels** hold **state** (current list, error messages, loading flags) and expose **commands** (async methods the View calls on user actions).
+- **Repositories** are the single source of truth for data; they don't know about each other.
+- **Services** wrap I/O (databases, HTTP APIs) and hold no state.
+
+```csharp
+// ViewModel — holds state + commands, no UI knowledge
+public class ProductCatalogueViewModel(ProductService service)
+{
+    // State — like fields in a Flutter ChangeNotifier
+    public IEnumerable<Product> Products { get; private set; } = [];
+    public string ErrorMessage { get; private set; } = string.Empty;
+
+    // Command — called by the View on user action
+    public async Task LoadProductsAsync()
+    {
+        Products = await service.GetAllAsync();
+        ErrorMessage = string.Empty;
+    }
+
+    public async Task AddProductAsync(string name, decimal price, string category)
+    {
+        try   { await service.CreateAsync(name, price, category); await LoadProductsAsync(); }
+        catch (ArgumentException ex) { ErrorMessage = ex.Message; }
+    }
+}
+
+// View (Program.cs / Blazor markup) — only talks to the ViewModel
+var vm = new ProductCatalogueViewModel(service);
+await vm.LoadProductsAsync();
+foreach (var p in vm.Products) Console.WriteLine(p);  // render state
+```
+
+In **Blazor Server** (Phase 3), the `@code { }` block *is* the ViewModel — it holds `_products`, `_newTitle`, and the `AddTodo()` command. In **ASP.NET Web API** (Phase 2), the pattern still applies but the ViewModel role is split between the Controller (routing commands) and Service (state / logic).
+
+### 1.3 Key Differences from Dart/Python to Note
+- Semicolons are required
+- `List<T>`, `Dictionary<K,V>`, `IEnumerable<T>` — generic collections
+- No positional-only args; use object initializers or named params
+- Access modifiers: `public`, `private`, `protected`, `internal`
+- `using` = import (like `import` in Dart/Python)
+
+### 1.4 Practice Task
+Build a console app: a simple in-memory product catalogue (CRUD) using classes, LINQ, async methods, and the **MVVM pattern**. Structure your code across all four layers:
+- **Model** — `Product` class
+- **Repository** — `IProductRepository` interface + `InMemoryProductRepository` implementation
+- **Service** — `ProductService` (business logic: validation, filtering, aggregation)
+- **ViewModel** — `ProductCatalogueViewModel` (holds state + exposes commands)
+- **View** — `Program.cs` (thin — only calls ViewModel commands and prints ViewModel state)
+
+---
+
+## Phase 2 — ASP.NET Core Web API (4–6 days)
+
+> Think: Flask but with a built-in DI container, middleware pipeline, and OpenAPI baked in.
+
+### 2.1 Create Your First API
+```bash
+dotnet new webapi -n ProductApi --use-controllers
+cd ProductApi
+dotnet run
+# Swagger UI auto-opens at https://localhost:{port}/swagger
+```
+
+### 2.2 Project Structure
+```
+ProductApi/
+├── Controllers/        # Flask blueprints / route handlers
+├── Models/             # Data models (like Pydantic models in Flask)
+├── Services/           # Business logic layer
+├── Data/               # EF Core DbContext (like SQLAlchemy)
+├── Program.cs          # App bootstrap — Flask's app = Flask(__name__)
+└── appsettings.json    # Config — like Flask's config.py / .env
+```
+
+### 2.3 Controller vs Flask Route
+```python
+# Flask
+@app.route("/products/<int:id>", methods=["GET"])
+def get_product(id):
+    product = db.session.get(Product, id)
+    return jsonify(product)
+```
+```csharp
+// ASP.NET Controller
+[ApiController]
+[Route("api/[controller]")]
+public class ProductsController : ControllerBase
+{
+    private readonly IProductService _service;
+    public ProductsController(IProductService service) => _service = service;  // DI
+
+    [HttpGet("{id}")]
+    public async Task<ActionResult<ProductDto>> GetProduct(int id)
+    {
+        var product = await _service.GetByIdAsync(id);
+        return product is null ? NotFound() : Ok(product);
+    }
+}
+```
+
+### 2.4 Dependency Injection (DI)
+DI is first-class in ASP.NET — no separate library needed.
+```csharp
+// Program.cs — register services (like Flask extensions)
+builder.Services.AddScoped<IProductService, ProductService>();
+builder.Services.AddScoped<IProductRepository, ProductRepository>();
+// AddScoped  = new instance per HTTP request (most common)
+// AddSingleton = one instance for app lifetime
+// AddTransient = new instance every time it's requested
+```
+
+### 2.5 Entity Framework Core (EF Core — like SQLAlchemy)
+```bash
+dotnet add package Microsoft.EntityFrameworkCore.Sqlite
+dotnet add package Microsoft.EntityFrameworkCore.Design
+```
+```csharp
+public class AppDbContext : DbContext
+{
+    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) {}
+    public DbSet<Product> Products => Set<Product>();
+}
+```
+```bash
+# Migrations (like Flask-Migrate / Alembic)
+dotnet ef migrations add InitialCreate
+dotnet ef database update
+```
+
+### 2.6 Minimal APIs (simpler — closer to Flask style)
+```csharp
+// Program.cs
+app.MapGet("/api/products", async (AppDbContext db) =>
+    await db.Products.ToListAsync());
+
+app.MapPost("/api/products", async (ProductDto dto, AppDbContext db) =>
+{
+    var product = new Product { Name = dto.Name, Price = dto.Price };
+    db.Products.Add(product);
+    await db.SaveChangesAsync();
+    return Results.Created($"/api/products/{product.Id}", product);
+});
+```
+
+### 2.7 Middleware Pipeline (like Flask's before_request / after_request)
+```csharp
+app.UseHttpsRedirection();   // redirect HTTP → HTTPS
+app.UseAuthentication();     // who are you?
+app.UseAuthorization();      // what can you do?
+app.UseExceptionHandler();   // global error handling
+```
+
+### 2.8 Configuration & Secrets
+```json
+// appsettings.json (like .env / config.py)
+{
+  "ConnectionStrings": {
+    "Default": "Data Source=app.db"
+  }
+}
+```
+```csharp
+var connString = builder.Configuration.GetConnectionString("Default");
+```
+
+### 2.9 Practice Task
+Build a REST API for a simple Todo app with EF Core + SQLite: GET/POST/PUT/DELETE `/api/todos`.
+
+---
+
+## Phase 3 — Blazor Server (5–7 days)
+
+> Blazor Server = Flutter widgets but rendered as HTML. The server holds state; SignalR (WebSocket) syncs UI changes to the browser in real time.
+
+### 3.1 Create a Blazor Server App
+```bash
+dotnet new blazorserver -n BlazorTodo
+cd BlazorTodo
+dotnet run
+```
+
+### 3.2 Blazor Architecture vs Flutter
+
+| Flutter                                   | Blazor Server                         | MVVM Layer |
+|---                                        |---                                    |---|
+| `StatefulWidget` + `State`                | Razor component (`.razor`)            | View + ViewModel combined |
+| `build()` method                          | `.razor` HTML markup                  | **View** |
+| `ChangeNotifier` / Riverpod `Notifier`    | `@code { }` block                     | **ViewModel** |
+| `setState(() { })`                        | `StateHasChanged()`                   | ViewModel notifies View |
+| Repository class                          | Repository class                      | **Repository** (data layer) |
+| Service class                             | Service class / EF Core               | **Service** (data layer) |
+| `pubspec.yaml`                            | `*.csproj`                            | — |
+| Navigator / GoRouter                      | Blazor Router (`<Router>`, `@page`)   | — |
+| `FutureBuilder`                           | `await` in `OnInitializedAsync()`     | — |
+| Provider / InheritedWidget                | Cascading Values, `[Inject]` DI       | — |
+
+> In Blazor Server, the `.razor` file bundles the View (HTML markup) and ViewModel (`@code { }`) in one file — just like a Flutter `StatefulWidget` bundles its widget tree and state class. The MVVM separation is still real: the markup only renders state; the `@code` block holds state and commands.
+
+### 3.3 Component Anatomy
+```razor
+@* TodoList.razor — like a Flutter StatefulWidget *@
+@page "/todos"
+@inject ITodoService TodoService   @* like Flutter's Provider.of<T>(context) *@
+
+<h1>Todos</h1>
+
+@if (_todos is null)
+{
+    <p>Loading...</p>   @* like FutureBuilder's waiting state *@
+}
+else
+{
+    <ul>
+        @foreach (var todo in _todos)
+        {
+            <li>@todo.Title</li>   @* @variable = interpolation *@
+        }
+    </ul>
+}
+
+<input @bind="_newTitle" placeholder="New todo..." />
+<button @onclick="AddTodo">Add</button>
+
+@code {
+    private List<TodoItem>? _todos;
+    private string _newTitle = string.Empty;
+
+    // like Flutter's initState()
+    protected override async Task OnInitializedAsync()
+    {
+        _todos = await TodoService.GetAllAsync();
+    }
+
+    private async Task AddTodo()
+    {
+        await TodoService.AddAsync(_newTitle);
+        _newTitle = string.Empty;
+        _todos = await TodoService.GetAllAsync();
+        // StateHasChanged() is called automatically after event handlers
+    }
+}
+```
+
+### 3.4 Component Parameters (like Flutter widget params)
+```razor
+@* ChildComponent.razor *@
+<p>@Message</p>
+
+@code {
+    [Parameter] public string Message { get; set; } = string.Empty;
+    [Parameter] public EventCallback OnClicked { get; set; }  // like VoidCallback
+}
+```
+```razor
+@* Parent usage *@
+<ChildComponent Message="Hello!" OnClicked="HandleClick" />
+```
+
+### 3.5 Forms & Validation
+```razor
+<EditForm Model="_form" OnValidSubmit="HandleSubmit">
+    <DataAnnotationsValidator />
+    <InputText @bind-Value="_form.Title" />
+    <ValidationMessage For="@(() => _form.Title)" />
+    <button type="submit">Save</button>
+</EditForm>
+```
+
+### 3.6 Routing (like Flutter GoRouter)
+```razor
+@page "/todos"          @* maps to /todos *@
+@page "/todos/{Id:int}" @* route param *@
+
+@code {
+    [Parameter] public int Id { get; set; }
+}
+```
+
+### 3.7 Layout (like Flutter's Scaffold)
+```razor
+@* MainLayout.razor *@
+@inherits LayoutComponentBase
+
+<NavMenu />             @* sidebar *@
+<main>
+    @Body               @* page content rendered here *@
+</main>
+```
+
+### 3.8 Practice Task
+Wire the Blazor Server frontend to your Todo API (Phase 2) using `HttpClient`, or share the EF Core DbContext directly (in Blazor Server you can do both).
+
+---
+
+## Phase 4 — CQRS Pattern (2–3 days)
+
+> CQRS = separating reads (Queries) from writes (Commands). In Flask terms: instead of one service with get/create/update methods, you have separate handler classes per operation. Uses the **MediatR** library.
+
+### 4.1 The Problem CQRS Solves
+```
+Traditional service (Flask style):
+ProductService.get_all()      ← read
+ProductService.create(data)   ← write
+ProductService.update(data)   ← write
+ProductService.delete(id)     ← write
+
+Problem: as the app grows, this one class balloons. Reads and writes
+have different scaling, caching, and validation needs.
+```
+
+### 4.2 CQRS with MediatR
+```bash
+dotnet add package MediatR
+dotnet add package MediatR.Extensions.Microsoft.DependencyInjection
+```
+```csharp
+// Program.cs
+builder.Services.AddMediatR(cfg =>
+    cfg.RegisterServicesFromAssembly(typeof(Program).Assembly));
+```
+
+### 4.3 Query (Read)
+```csharp
+// 1. Define the query (the "request")
+public record GetAllTodosQuery : IRequest<IEnumerable<TodoDto>>;
+
+// 2. Define the handler
+public class GetAllTodosHandler : IRequestHandler<GetAllTodosQuery, IEnumerable<TodoDto>>
+{
+    private readonly AppDbContext _db;
+    public GetAllTodosHandler(AppDbContext db) => _db = db;
+
+    public async Task<IEnumerable<TodoDto>> Handle(
+        GetAllTodosQuery request, CancellationToken ct)
+    {
+        return await _db.Todos
+            .Select(t => new TodoDto(t.Id, t.Title, t.IsComplete))
+            .ToListAsync(ct);
+    }
+}
+```
+
+### 4.4 Command (Write)
+```csharp
+// 1. Define the command
+public record CreateTodoCommand(string Title) : IRequest<TodoDto>;
+
+// 2. Define the handler
+public class CreateTodoHandler : IRequestHandler<CreateTodoCommand, TodoDto>
+{
+    private readonly AppDbContext _db;
+    public CreateTodoHandler(AppDbContext db) => _db = db;
+
+    public async Task<TodoDto> Handle(CreateTodoCommand request, CancellationToken ct)
+    {
+        var todo = new Todo { Title = request.Title };
+        _db.Todos.Add(todo);
+        await _db.SaveChangesAsync(ct);
+        return new TodoDto(todo.Id, todo.Title, todo.IsComplete);
+    }
+}
+```
+
+### 4.5 Dispatch from Controller or Blazor Component
+```csharp
+// Controller
+[ApiController]
+[Route("api/[controller]")]
+public class TodosController : ControllerBase
+{
+    private readonly IMediator _mediator;
+    public TodosController(IMediator mediator) => _mediator = mediator;
+
+    [HttpGet]
+    public async Task<IActionResult> GetAll()
+        => Ok(await _mediator.Send(new GetAllTodosQuery()));
+
+    [HttpPost]
+    public async Task<IActionResult> Create(CreateTodoCommand command)
+        => Ok(await _mediator.Send(command));
+}
+```
+```razor
+@* Blazor component *@
+@inject IMediator Mediator
+
+@code {
+    private IEnumerable<TodoDto>? _todos;
+
+    protected override async Task OnInitializedAsync()
+        => _todos = await Mediator.Send(new GetAllTodosQuery());
+}
+```
+
+### 4.6 Adding Validation with FluentValidation
+```bash
+dotnet add package FluentValidation.DependencyInjectionExtensions
+```
+```csharp
+public class CreateTodoValidator : AbstractValidator<CreateTodoCommand>
+{
+    public CreateTodoValidator()
+    {
+        RuleFor(x => x.Title).NotEmpty().MaximumLength(200);
+    }
+}
+```
+
+---
+
+## Phase 5 — Capstone App: "TaskBoard" (5–7 days)
+
+A minimal Kanban-style task board with:
+- **Backend**: ASP.NET Core Web API + EF Core + SQLite
+- **Frontend**: Blazor Server
+- **Pattern**: CQRS via MediatR
+- **Auth**: Simple JWT or ASP.NET Identity (cookie-based for Blazor)
+- **Deploy**: Docker + Railway / Azure App Service
+
+### 5.1 Feature Scope
+- [ ] Create / view / complete / delete tasks
+- [ ] Tasks belong to columns: To Do, In Progress, Done
+- [ ] Simple user login (cookie auth)
+
+### 5.2 Full Project Structure
+
+Each project maps to a distinct MVVM layer:
+
+```
+TaskBoard/
+├── TaskBoard.Api/              # VIEW layer — routes HTTP requests to Application layer
+│   ├── Controllers/            #   Controllers dispatch Commands/Queries (thin ViewModels for REST)
+│   ├── Program.cs
+│   └── appsettings.json
+├── TaskBoard.Application/      # VIEWMODEL layer — CQRS Commands, Queries, Handlers, Validators
+│   ├── Tasks/
+│   │   ├── Commands/
+│   │   │   ├── CreateTaskCommand.cs
+│   │   │   └── CreateTaskHandler.cs
+│   │   └── Queries/
+│   │       ├── GetTasksQuery.cs
+│   │       └── GetTasksHandler.cs
+│   └── Common/
+├── TaskBoard.Domain/           # MODEL layer — plain C# domain entities
+│   └── Entities/
+│       └── TaskItem.cs
+├── TaskBoard.Infrastructure/   # SERVICE/REPOSITORY layer — EF Core DbContext, data access
+│   └── Data/
+│       └── AppDbContext.cs
+└── TaskBoard.Web/              # VIEW + VIEWMODEL layer — Blazor Server
+    ├── Pages/                  #   .razor files: markup = View, @code block = ViewModel
+    ├── Shared/
+    └── Program.cs
+```
+
+> **MVVM ↔ CQRS**: CQRS (Phase 4) is a natural extension of MVVM. Each `Command` or `Query` is a formalised ViewModel command — instead of calling `viewModel.CreateTask(title)`, you dispatch `new CreateTaskCommand(title)` through MediatR. The Handler is the implementation. The layers stay the same; the wiring becomes more explicit and testable.
+
+### 5.3 Solution Setup
+```bash
+dotnet new sln -n TaskBoard
+dotnet new webapi -n TaskBoard.Api
+dotnet new blazorserver -n TaskBoard.Web
+dotnet new classlib -n TaskBoard.Application
+dotnet new classlib -n TaskBoard.Domain
+dotnet new classlib -n TaskBoard.Infrastructure
+
+dotnet sln add **/*.csproj
+
+# Add project references
+cd TaskBoard.Api
+dotnet add reference ../TaskBoard.Application ../TaskBoard.Infrastructure
+
+cd ../TaskBoard.Web
+dotnet add reference ../TaskBoard.Application ../TaskBoard.Infrastructure
+
+cd ../TaskBoard.Infrastructure
+dotnet add reference ../TaskBoard.Domain
+
+cd ../TaskBoard.Application
+dotnet add reference ../TaskBoard.Domain
+```
+
+### 5.4 Domain Entity
+```csharp
+// TaskBoard.Domain/Entities/TaskItem.cs
+public class TaskItem
+{
+    public int Id { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public string Column { get; set; } = "Todo";  // Todo | InProgress | Done
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+}
+```
+
+### 5.5 EF Core Setup
+```csharp
+// TaskBoard.Infrastructure/Data/AppDbContext.cs
+public class AppDbContext : DbContext
+{
+    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) {}
+    public DbSet<TaskItem> Tasks => Set<TaskItem>();
+}
+```
+```csharp
+// Register in Api/Program.cs and Web/Program.cs
+builder.Services.AddDbContext<AppDbContext>(opt =>
+    opt.UseSqlite("Data Source=taskboard.db"));
+```
+```bash
+cd TaskBoard.Infrastructure
+dotnet ef --startup-project ../TaskBoard.Api migrations add Init
+dotnet ef --startup-project ../TaskBoard.Api database update
+```
+
+### 5.6 CQRS Handlers (Application Layer)
+```csharp
+// Commands/CreateTask/CreateTaskCommand.cs
+public record CreateTaskCommand(string Title) : IRequest<TaskItemDto>;
+
+// Commands/CreateTask/CreateTaskHandler.cs
+public class CreateTaskHandler : IRequestHandler<CreateTaskCommand, TaskItemDto>
+{
+    private readonly AppDbContext _db;
+    public CreateTaskHandler(AppDbContext db) => _db = db;
+    public async Task<TaskItemDto> Handle(CreateTaskCommand req, CancellationToken ct)
+    {
+        var task = new TaskItem { Title = req.Title };
+        _db.Tasks.Add(task);
+        await _db.SaveChangesAsync(ct);
+        return new TaskItemDto(task.Id, task.Title, task.Column);
+    }
+}
+
+// Queries/GetTasks/GetTasksQuery.cs
+public record GetTasksQuery : IRequest<IEnumerable<TaskItemDto>>;
+
+// Queries/GetTasks/GetTasksHandler.cs
+public class GetTasksHandler : IRequestHandler<GetTasksQuery, IEnumerable<TaskItemDto>>
+{
+    private readonly AppDbContext _db;
+    public GetTasksHandler(AppDbContext db) => _db = db;
+    public async Task<IEnumerable<TaskItemDto>> Handle(GetTasksQuery req, CancellationToken ct)
+        => await _db.Tasks.Select(t => new TaskItemDto(t.Id, t.Title, t.Column)).ToListAsync(ct);
+}
+
+// Shared DTO
+public record TaskItemDto(int Id, string Title, string Column);
+```
+
+### 5.7 API Controller
+```csharp
+[ApiController, Route("api/[controller]")]
+public class TasksController : ControllerBase
+{
+    private readonly IMediator _mediator;
+    public TasksController(IMediator mediator) => _mediator = mediator;
+
+    [HttpGet]   public async Task<IActionResult> Get()
+        => Ok(await _mediator.Send(new GetTasksQuery()));
+
+    [HttpPost]  public async Task<IActionResult> Create(CreateTaskCommand cmd)
+        => Ok(await _mediator.Send(cmd));
+}
+```
+
+### 5.8 Blazor Board Page
+```razor
+@page "/"
+@inject IMediator Mediator
+
+<h1>TaskBoard</h1>
+
+<div style="display:flex; gap:1rem;">
+    @foreach (var column in new[] { "Todo", "InProgress", "Done" })
+    {
+        <div style="flex:1; border:1px solid #ccc; padding:1rem;">
+            <h3>@column</h3>
+            @foreach (var task in _tasks?.Where(t => t.Column == column) ?? [])
+            {
+                <div style="padding:0.5rem; margin:0.25rem; background:#f5f5f5;">
+                    @task.Title
+                </div>
+            }
+        </div>
+    }
+</div>
+
+<input @bind="_newTitle" placeholder="New task title..." />
+<button @onclick="AddTask">Add to Todo</button>
+
+@code {
+    private IEnumerable<TaskItemDto>? _tasks;
+    private string _newTitle = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+        => _tasks = await Mediator.Send(new GetTasksQuery());
+
+    private async Task AddTask()
+    {
+        if (string.IsNullOrWhiteSpace(_newTitle)) return;
+        await Mediator.Send(new CreateTaskCommand(_newTitle));
+        _newTitle = string.Empty;
+        _tasks = await Mediator.Send(new GetTasksQuery());
+    }
+}
+```
+
+---
+
+## Phase 6 — Deployment (2–3 days)
+
+### Option A: Docker + Railway (Easiest — like deploying a Flask container)
+
+#### Dockerfile (Blazor Server / combined app)
+```dockerfile
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+WORKDIR /src
+COPY . .
+RUN dotnet publish TaskBoard.Web/TaskBoard.Web.csproj -c Release -o /app/publish
+
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
+WORKDIR /app
+COPY --from=build /app/publish .
+EXPOSE 8080
+ENV ASPNETCORE_URLS=http://+:8080
+ENTRYPOINT ["dotnet", "TaskBoard.Web.dll"]
+```
+
+```bash
+docker build -t taskboard .
+docker run -p 8080:8080 taskboard
+```
+
+**Deploy to Railway:**
+1. Push to GitHub
+2. New project → Deploy from GitHub repo → Railway auto-detects Dockerfile
+3. Set `PORT` env var → done
+
+### Option B: Azure App Service (if client uses Azure)
+```bash
+dotnet publish -c Release -o ./publish
+az webapp up --name taskboard-app --resource-group myRG --runtime "DOTNET|8.0"
+```
+
+### Option C: Self-hosted Linux VPS
+```bash
+# On your server
+sudo apt install dotnet-runtime-8.0
+scp -r ./publish user@server:/var/www/taskboard
+# Configure nginx as reverse proxy + systemd service
+```
+
+### Production Checklist
+- [ ] Move SQLite → PostgreSQL (`Npgsql.EntityFrameworkCore.PostgreSQL` package)
+- [ ] Store connection string in environment variables (never appsettings.json in prod)
+- [ ] Enable HTTPS (handled by platform on Railway/Azure)
+- [ ] Add `builder.Services.AddResponseCompression()` for Blazor Server performance
+- [ ] Set `ASPNETCORE_ENVIRONMENT=Production`
+
+---
+
+## Study Schedule Overview
+
+| Week | Phase | Daily time |
+|---|---|---|
+| Week 1 | C# Fundamentals (Phase 1) | 2–3 hrs |
+| Week 2 | ASP.NET Core Web API (Phase 2) | 2–3 hrs |
+| Week 3 | Blazor Server (Phase 3) | 2–3 hrs |
+| Week 4 | CQRS + MediatR (Phase 4) | 1–2 hrs |
+| Week 5–6 | Capstone App + Deploy (Phase 5–6) | 2–4 hrs |
+
+---
+
+## Key Resources
+
+- [Microsoft Learn – C# Fundamentals](https://learn.microsoft.com/en-us/dotnet/csharp/)
+- [ASP.NET Core Docs](https://learn.microsoft.com/en-us/aspnet/core/)
+- [Blazor Docs](https://learn.microsoft.com/en-us/aspnet/core/blazor/)
+- [MediatR GitHub](https://github.com/jbogard/MediatR)
+- [EF Core Docs](https://learn.microsoft.com/en-us/ef/core/)
+- [Nick Chapsas (YouTube)](https://www.youtube.com/@nickchapsas) — best .NET crash course content
+- [Tim Corey (YouTube)](https://www.youtube.com/@IAmTimCorey) — beginner-friendly C#
+- [Blazor Train (YouTube)](https://www.blazortrain.com/)
