@@ -148,6 +148,7 @@ public async Task<Product> GetProductAsync(int id)
 #### LINQ (like Python list comprehensions / Flutter's `.where().map()`)
 ```csharp
 // Python: [p for p in products if p.price > 10]
+// use case: filtering, mapping, sorting collections
 var expensive = products
     .Where(p => p.Price > 10)
     .OrderBy(p => p.Name)
@@ -157,11 +158,13 @@ var expensive = products
 
 #### Interfaces & Dependency Injection (key pattern everywhere)
 ```csharp
+// what this does: defines a contract (IProductRepository) that can have multiple implementations (e.g. InMemoryProductRepository, SqlProductRepository). The rest of the app depends on the interface, not the implementation — this allows for easy swapping of data sources and is essential for testing (mocking).
+// Interface — defines the contract, no implementation
 public interface IProductRepository
 {
     Task<IEnumerable<Product>> GetAllAsync();
 }
-
+ // Implementation — can have multiple, e.g. InMemoryProductRepository, SqlProductRepository
 public class ProductRepository : IProductRepository
 {
     public async Task<IEnumerable<Product>> GetAllAsync() { ... }
@@ -175,14 +178,16 @@ You already use MVVM in Flutter. The same pattern applies in C# — it just look
 | Layer | Responsibility | Flutter | C# (Console / Blazor) |
 |---|---|---|---|
 | **View** | Render UI, delegate events to ViewModel | Widget / `build()` | `Program.cs` output / `.razor` HTML markup |
-| **ViewModel** | Hold UI state, expose commands | `ChangeNotifier` / Riverpod `Notifier` | ViewModel class / Blazor `@code { }` block |
+| **ViewModel** | Hold UI state, talks to repositories. expose commands | `ChangeNotifier` / Riverpod `Notifier` | ViewModel class / Blazor `@code { }` block |
+| **Model** | Domain entities | Dart class | C# class (e.g. `Product`) |
 | **Repository** | Source of truth for app data | Repository class | Repository class (e.g. `IProductRepository`) |
 | **Service** | Wraps external APIs / I/O | Service class | Service class / EF Core |
 
 The key rules (same in Flutter and C#):
-- **Views** know only about the ViewModel — never the Repository or Service directly.
-- **ViewModels** hold **state** (current list, error messages, loading flags) and expose **commands** (async methods the View calls on user actions).
-- **Repositories** are the single source of truth for data; they don't know about each other.
+- **Views** know only about the ViewModel — never the Repository or Service directly. 
+- **ViewModels** hold **state** (current list, error messages, loading flags) and expose **commands** (async methods the View calls on user actions). Processing logic, managing state, and calling services. Knows about Models and Repositories.
+- **Models** defines data structures. Knows nothing about other layers.
+- **Repositories** (Optional but recommended) Handles data fetching for this specific feature.
 - **Services** wrap I/O (databases, HTTP APIs) and hold no state.
 
 ```csharp
@@ -213,7 +218,7 @@ await vm.LoadProductsAsync();
 foreach (var p in vm.Products) Console.WriteLine(p);  // render state
 ```
 
-In **Blazor Server** (Phase 3), the `@code { }` block *is* the ViewModel — it holds `_products`, `_newTitle`, and the `AddTodo()` command. In **ASP.NET Web API** (Phase 2), the pattern still applies but the ViewModel role is split between the Controller (routing commands) and Service (state / logic).
+> In **Blazor Server** (Phase 3), the `@code { }` block *is* the ViewModel — it holds `_products`, `_newTitle`, and the `AddTodo()` command. 
 
 ### 1.3 Key Differences from Dart/Python to Note
 - Semicolons are required

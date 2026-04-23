@@ -1,0 +1,15 @@
+/Users/kylewalden/Desktop/local_git/c-sharp-net-blazor/phase-1/1.4-product-catalogue/ProductCatalogue/bin/Debug/net10.0/ProductCatalogue
+/Users/kylewalden/Desktop/local_git/c-sharp-net-blazor/phase-1/1.4-product-catalogue/ProductCatalogue/bin/Debug/net10.0/ProductCatalogue.deps.json
+/Users/kylewalden/Desktop/local_git/c-sharp-net-blazor/phase-1/1.4-product-catalogue/ProductCatalogue/bin/Debug/net10.0/ProductCatalogue.runtimeconfig.json
+/Users/kylewalden/Desktop/local_git/c-sharp-net-blazor/phase-1/1.4-product-catalogue/ProductCatalogue/bin/Debug/net10.0/ProductCatalogue.dll
+/Users/kylewalden/Desktop/local_git/c-sharp-net-blazor/phase-1/1.4-product-catalogue/ProductCatalogue/bin/Debug/net10.0/ProductCatalogue.pdb
+/Users/kylewalden/Desktop/local_git/c-sharp-net-blazor/phase-1/1.4-product-catalogue/ProductCatalogue/obj/Debug/net10.0/ProductCatalogue.GeneratedMSBuildEditorConfig.editorconfig
+/Users/kylewalden/Desktop/local_git/c-sharp-net-blazor/phase-1/1.4-product-catalogue/ProductCatalogue/obj/Debug/net10.0/ProductCatalogue.AssemblyInfoInputs.cache
+/Users/kylewalden/Desktop/local_git/c-sharp-net-blazor/phase-1/1.4-product-catalogue/ProductCatalogue/obj/Debug/net10.0/ProductCatalogue.AssemblyInfo.cs
+/Users/kylewalden/Desktop/local_git/c-sharp-net-blazor/phase-1/1.4-product-catalogue/ProductCatalogue/obj/Debug/net10.0/ProductCatalogue.csproj.CoreCompileInputs.cache
+/Users/kylewalden/Desktop/local_git/c-sharp-net-blazor/phase-1/1.4-product-catalogue/ProductCatalogue/obj/Debug/net10.0/ProductCatalogue.sourcelink.json
+/Users/kylewalden/Desktop/local_git/c-sharp-net-blazor/phase-1/1.4-product-catalogue/ProductCatalogue/obj/Debug/net10.0/ProductCatalogue.dll
+/Users/kylewalden/Desktop/local_git/c-sharp-net-blazor/phase-1/1.4-product-catalogue/ProductCatalogue/obj/Debug/net10.0/refint/ProductCatalogue.dll
+/Users/kylewalden/Desktop/local_git/c-sharp-net-blazor/phase-1/1.4-product-catalogue/ProductCatalogue/obj/Debug/net10.0/ProductCatalogue.pdb
+/Users/kylewalden/Desktop/local_git/c-sharp-net-blazor/phase-1/1.4-product-catalogue/ProductCatalogue/obj/Debug/net10.0/ProductCatalogue.genruntimeconfig.cache
+/Users/kylewalden/Desktop/local_git/c-sharp-net-blazor/phase-1/1.4-product-catalogue/ProductCatalogue/obj/Debug/net10.0/ref/ProductCatalogue.dll

@@ -23,7 +23,7 @@ No database. No HTTP. Just pure C# fundamentals in a console app.
 
 ---
 
-## Step 1 — Scaffold the Project
+## [x] Step 1 — Scaffold the Project 
 
 ```bash
 cd phase-1/1.4-product-catalogue
@@ -61,7 +61,7 @@ ProductCatalogue/
 
 ---
 
-## Step 2 — Define the `Product` Model
+## [x] Step 2 — Define the `Product` Model
 
 Create a new file: `Models/Product.cs`
 
@@ -91,7 +91,7 @@ C# requires non-nullable properties to be initialised. `string.Empty` is the idi
 
 ---
 
-## Step 3 — Define the Repository Interface
+## [x] Step 3 — Define the Repository Interface
 
 Create `Repositories/IProductRepository.cs`
 
@@ -101,6 +101,8 @@ mkdir Repositories
 
 ```csharp
 // Repositories/IProductRepository.cs
+// this is the contract for our data layer — it defines what operations we can perform on products, but not how they're implemented. The rest of the app will depend on this interface, not the concrete implementation, which allows us to swap out the in-memory version for a real database later without changing any other code.
+// CRUD operations + async signatures — same as a Flutter repository interface
 using ProductCatalogue.Models;
 
 namespace ProductCatalogue.Repositories;
@@ -121,12 +123,14 @@ This is the DI pattern you'll use everywhere in ASP.NET. The interface defines t
 
 ---
 
-## Step 4 — Implement the In-Memory Repository
+## [x] Step 4 — Implement the In-Memory Repository
 
 Create `Repositories/InMemoryProductRepository.cs`
 
 ```csharp
 // Repositories/InMemoryProductRepository.cs
+// this is our fake "database" — it implements the repository interface but just uses a List<Product> in memory. In Phase 2 this will be replaced by a real database implementation, but the rest of the app won't need to change at all because it depends on the interface, not the implementation.
+// this is like FirestoreService extends IProductRepository in Flutter — it implements the same methods but with a different data source.
 using ProductCatalogue.Models;
 
 namespace ProductCatalogue.Repositories;
@@ -187,7 +191,7 @@ public class InMemoryProductRepository : IProductRepository
 
 ---
 
-## Step 5 — Define the Service Layer
+## [x] Step 5 — Define the Service Layer
 
 Create `Services/ProductService.cs`
 
@@ -195,7 +199,7 @@ Create `Services/ProductService.cs`
 mkdir Services
 ```
 
-This layer sits between the ViewModel and the repository. It holds business logic (validation, LINQ filtering). In Flutter MVVM terms this is the **Repository** layer — it's the last thing before raw data storage.
+This layer sits between the ViewModel and the repository (step 3). It holds business logic (validation, LINQ filtering). In Flutter MVVM terms this is the **Repository** layer — it's the last thing before raw data storage.
 
 ```csharp
 // Services/ProductService.cs
@@ -260,7 +264,7 @@ public class ProductService(IProductRepository repository)
 
 ---
 
-## Step 6 — Create the ViewModel
+## [x] Step 6 — Create the ViewModel
 
 This is the new layer. Create `ViewModels/ProductCatalogueViewModel.cs`
 
@@ -275,6 +279,7 @@ The ViewModel is the bridge between the data layers (Service/Repository) and the
 
 ```csharp
 // ViewModels/ProductCatalogueViewModel.cs
+// state management layer
 using ProductCatalogue.Models;
 using ProductCatalogue.Services;
 
@@ -358,7 +363,7 @@ In a UI context (Flutter or Blazor), you don't want unhandled exceptions crashin
 
 ---
 
-## Step 7 — Wire Up `Program.cs` (the View)
+## [x] Step 7 — Wire Up `Program.cs` (the View)
 
 The View's only job is to call ViewModel commands and render ViewModel state. It should contain **no business logic** — just like a Flutter widget's `build()` method.
 
