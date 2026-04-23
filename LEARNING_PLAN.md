@@ -4,6 +4,61 @@
 
 ---
 
+## Beginner Resources
+- [C# Full Course for beginner](https://youtu.be/GhQdlIFylQ8?si=3cWHxg4JgoMItvO)
+- [ASP .NET Core Web Api course](https://youtu.be/38GNKtclDdE?si=IgFCRKkJtUyp23k2)
+- [Blazor Server side](https://youtu.be/8DNgdphLvag?si=NQ-rOVbyv65URVHR)
+- [CQRS - Command Query Responsibility Segregation](https://youtu.be/yozD5Tnd8nw?si=3wWPlDBzQAPC-i3C)
+
+## Index
+- [Phase 1 — C# Language Fundamentals](#phase-1--c-language-fundamentals)
+    - 1.1 Setup
+    - 1.2 Core Language Concepts
+    - 1.3 Key Differences from Dart/Python
+    - 1.4 Practice Task (In-Memory Product Catalogue)
+- [Phase 2 — ASP.NET Core Web API](#phase-2--aspnet-core-web-api)
+    - 2.1 Create Your First API
+    - 2.2 Project Structure
+    - 2.3 Controller vs Flask Route
+    - 2.4 Dependency Injection
+    - 2.5 Entity Framework Core
+    - 2.6 Minimal APIs
+    - 2.7 Middleware Pipeline
+    - 2.8 Configuration & Secrets
+    - 2.9 Practice Task
+- [Phase 3 — Blazor Server](#phase-3--blazor-server)
+    - 3.1 Create a Blazor Server App
+    - 3.2 Blazor Architecture vs Flutter
+    - 3.3 Component Anatomy
+    - 3.4 Component Parameters
+    - 3.5 Forms & Validation
+    - 3.6 Routing
+    - 3.7 Layout
+    - 3.8 Practice Task
+- [Phase 4 — CQRS Pattern](#phase-4--cqrs-pattern)
+    - 4.1 The Problem CQRS Solves
+    - 4.2 CQRS with MediatR
+    - 4.3 Query (Read)
+    - 4.4 Command (Write)
+    - 4.5 Dispatch from Controller or Blazor Component
+    - 4.6 Adding Validation with FluentValidation
+- [Phase 5 — Capstone App: "TaskBoard"](#phase-5--capstone-app-taskboard)
+    - 5.1 Feature Scope
+    - 5.2 Full Project Structure
+    - 5.3 Solution Setup
+    - 5.4 Domain Entity
+    - 5.5 EF Core Setup
+    - 5.6 CQRS Handlers
+    - 5.7 API Controller
+    - 5.8 Blazor Board Page
+- [Phase 6 — Deployment](#phase-6--deployment)
+    - Option A: Docker + Railway
+    - Option B: Azure App Service
+    - Option C: Self-hosted VPS
+    - Production Checklist
+
+---
+
 ## Stack Analogy Map (Your Knowledge → This Stack)
 
 | What you know | Equivalent here |
@@ -21,7 +76,7 @@
 
 ---
 
-## Phase 1 — C# Language Fundamentals (3–5 days)
+## Phase 1 — C# Language Fundamentals
 
 > If you know Dart, C# will feel immediately familiar. Focus on the deltas.
 
@@ -176,7 +231,7 @@ Build a console app: a simple in-memory product catalogue (CRUD) using classes, 
 
 ---
 
-## Phase 2 — ASP.NET Core Web API (4–6 days)
+## Phase 2 — ASP.NET Core Web API
 
 > Think: Flask but with a built-in DI container, middleware pipeline, and OpenAPI baked in.
 
@@ -295,7 +350,7 @@ Build a REST API for a simple Todo app with EF Core + SQLite: GET/POST/PUT/DELET
 
 ---
 
-## Phase 3 — Blazor Server (5–7 days)
+## Phase 3 — Blazor Server
 
 > Blazor Server = Flutter widgets but rendered as HTML. The server holds state; SignalR (WebSocket) syncs UI changes to the browser in real time.
 
@@ -419,7 +474,7 @@ Wire the Blazor Server frontend to your Todo API (Phase 2) using `HttpClient`, o
 
 ---
 
-## Phase 4 — CQRS Pattern (2–3 days)
+## Phase 4 — CQRS Pattern
 
 > CQRS = separating reads (Queries) from writes (Commands). In Flask terms: instead of one service with get/create/update methods, you have separate handler classes per operation. Uses the **MediatR** library.
 
@@ -535,7 +590,7 @@ public class CreateTodoValidator : AbstractValidator<CreateTodoCommand>
 
 ---
 
-## Phase 5 — Capstone App: "TaskBoard" (5–7 days)
+## Phase 5 — Capstone App: "TaskBoard"
 
 A minimal Kanban-style task board with:
 - **Backend**: ASP.NET Core Web API + EF Core + SQLite
@@ -734,7 +789,7 @@ public class TasksController : ControllerBase
 
 ---
 
-## Phase 6 — Deployment (2–3 days)
+## Phase 6 — Deployment
 
 ### Option A: Docker + Railway (Easiest — like deploying a Flask container)
 
@@ -786,17 +841,7 @@ scp -r ./publish user@server:/var/www/taskboard
 
 ---
 
-## Study Schedule Overview
 
-| Week | Phase | Daily time |
-|---|---|---|
-| Week 1 | C# Fundamentals (Phase 1) | 2–3 hrs |
-| Week 2 | ASP.NET Core Web API (Phase 2) | 2–3 hrs |
-| Week 3 | Blazor Server (Phase 3) | 2–3 hrs |
-| Week 4 | CQRS + MediatR (Phase 4) | 1–2 hrs |
-| Week 5–6 | Capstone App + Deploy (Phase 5–6) | 2–4 hrs |
-
----
 
 ## Key Resources
 
