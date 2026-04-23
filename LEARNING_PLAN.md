@@ -4,7 +4,7 @@
 
 ---
 
-## Beginner Resources
+## Beginner Video Resources
 - [C# Full Course for beginner](https://youtu.be/GhQdlIFylQ8?si=3cWHxg4JgoMItvO)
 - [ASP .NET Core Web Api course](https://youtu.be/38GNKtclDdE?si=IgFCRKkJtUyp23k2)
 - [Blazor Server side](https://youtu.be/8DNgdphLvag?si=NQ-rOVbyv65URVHR)
@@ -56,6 +56,7 @@
     - Option B: Azure App Service
     - Option C: Self-hosted VPS
     - Production Checklist
+- [Testing & QA](#testing--qa)
 
 ---
 
@@ -471,6 +472,151 @@ else
 
 ### 3.8 Practice Task
 Wire the Blazor Server frontend to your Todo API (Phase 2) using `HttpClient`, or share the EF Core DbContext directly (in Blazor Server you can do both).
+
+## Testing & QA
+
+This section maps Flutter's testing types (unit, widget, integration) to equivalent testing strategies and tools for C#/.NET (console apps, ASP.NET Core Web API, and Blazor).
+
+### Overview — test pyramid & mapping
+- Flutter **unit tests** → .NET **unit tests** (xUnit/NUnit/MSTest) for models, services, and ViewModels.
+- Flutter **widget tests** → **bUnit** component tests for Blazor (`.razor` components) or ViewModel tests for console/desktop UI.
+- Flutter **integration tests** → **ASP.NET integration tests** using `WebApplicationFactory<T>` / `TestServer`, and **E2E** tests via Playwright/Selenium for browser flows.
+
+Follow the test pyramid: many fast unit tests, fewer component/integration tests, and a small set of full E2E tests.
+
+### Tools & packages
+- Unit tests: `xUnit`, `NUnit`, or `MSTest` + `Moq` for mocking + `FluentAssertions` for readable assertions.
+- Blazor component tests: `bUnit` (component rendering, parameters, events, markup assertions).
+- Integration tests: `Microsoft.AspNetCore.Mvc.Testing` (`WebApplicationFactory`) + EF Core in-memory or SQLite for test DBs.
+- End-to-end: Playwright (Node or .NET), or Selenium / Puppeteer.
+
+### Test project structure (recommended)
+```
+tests/
+    ProductCatalogue.Tests.Unit          # xUnit unit tests (services, viewmodels)
+    ProductCatalogue.Tests.Integration   # WebApplicationFactory integration tests
+    ProductCatalogue.Tests.E2E           # Playwright or Selenium E2E tests
+```
+
+### Quick examples
+
+Unit test (xUnit + Moq) — testing `ProductService` validation:
+```csharp
+// ProductServiceTests.cs
+using Xunit;
+using Moq;
+using ProductCatalogue.Repositories;
+using ProductCatalogue.Services;
+
+public class ProductServiceTests
+{
+        [Fact]
+        public async Task CreateAsync_InvalidName_ThrowsArgumentException()
+        {
+                var repo = new Mock<IProductRepository>();
+                var service = new ProductService(repo.Object);
+
+                await Assert.ThrowsAsync<ArgumentException>(() =>
+                        service.CreateAsync("", 1m, "cat"));
+        }
+}
+```
+
+Component test (bUnit) — Blazor component rendering check:
+```csharp
+// ProductListTests.cs
+using Bunit;
+using Xunit;
+
+public class ProductListTests : TestContext
+{
+        [Fact]
+        public void RendersProducts()
+        {
+                var products = new[] { new Product { Id = 1, Name = "Key", Price = 1m } };
+                var cut = RenderComponent<ProductList>(parameters =>
+                        parameters.Add(p => p.Products, products));
+
+                Assert.Contains("Key", cut.Markup);
+        }
+}
+```
+
+Integration test (WebApplicationFactory) — exercise the real HTTP pipeline:
+```csharp
+// ProductsApiTests.cs
+using Xunit;
+using Microsoft.AspNetCore.Mvc.Testing;
+
+public class ProductsApiTests : IClassFixture<WebApplicationFactory<Program>>
+{
+        private readonly HttpClient _client;
+        public ProductsApiTests(WebApplicationFactory<Program> factory)
+        {
+                _client = factory.CreateClient();
+        }
+
+        [Fact]
+        public async Task Get_ReturnsOk()
+        {
+                var res = await _client.GetAsync("/api/products");
+                res.EnsureSuccessStatusCode();
+        }
+}
+```
+
+E2E with Playwright (quick notes)
+- Use Playwright to automate browser flows (login, CRUD through UI).
+- Two approaches: Playwright Node (recommended for full example suites) or Playwright for .NET.
+
+Installation examples:
+```bash
+dotnet add package xunit
+dotnet add package Moq
+dotnet add package Microsoft.AspNetCore.Mvc.Testing
+dotnet add package bunit
+# For Playwright (Node):
+npm init playwright@latest
+npx playwright test
+```
+
+### Running tests
+- Run all tests: `dotnet test`
+- Run a specific test project: `dotnet test tests/ProductCatalogue.Tests.Unit`
+- Use test categories or traits to filter slow/integration tests in CI.
+
+### Strategies & best practices
+- Keep unit tests fast and isolated (mock dependencies).
+- Test behavior, not implementation details.
+- Use in-memory or ephemeral SQLite for integration tests to simulate EF Core.
+- Reserve E2E tests for critical user journeys only.
+- Seed deterministic test data and reset state between tests (use fixtures or Respawn for DB resets).
+- Add tests as you add features — consider TDD for critical logic.
+
+### CI suggestion (GitHub Actions)
+```yaml
+name: CI
+on: [push, pull_request]
+jobs:
+    build-and-test:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+            - name: Setup .NET
+                uses: actions/setup-dotnet@v3
+                with:
+                    dotnet-version: '8.0.x'
+            - name: Restore
+                run: dotnet restore
+            - name: Build
+                run: dotnet build --no-restore --configuration Release
+            - name: Run unit + integration tests
+                run: dotnet test --no-build --verbosity normal
+            # Add Playwright step if using Node Playwright (optional)
+```
+
+---
+
 
 ---
 
