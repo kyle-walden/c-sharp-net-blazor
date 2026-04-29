@@ -1,0 +1,92 @@
+@* Pages/Todos.razor *@
+@* Flutter analogy: a StatefulWidget — markup is build(), @code is the State<T> class *@
+@page "/todos"
+@inject ITodoService TodoService
+@using BlazorTodo.Models
+@using BlazorTodo.Services
+@using BlazorTodo.Components
+
+<PageTitle>Todos</PageTitle>
+
+<h1>My Todos</h1>
+
+@* Loading state — like FutureBuilder's ConnectionState.waiting *@
+@if (_todos is null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    @* Computed property read from state — no method call needed *@
+    <p>@_todos.Count(t => !t.IsComplete) remaining</p>
+
+    <ul class="list-unstyled">
+        @foreach (var todo in _todos)
+        {
+            <TodoCard Todo="todo" OnToggle="Toggle" OnDelete="Delete" />
+        }
+    </ul>
+
+    @if (_todos.Count == 0)
+    {
+        <p>No todos yet — add one below.</p>
+    }
+}
+
+@* Inline add form — we'll extract this to a component in Step 8 *@
+@* Replace the <hr /><div>...</div> inline add form section in Todos.razor with: *@
+<hr />
+<AddTodoForm OnAdd="HandleAdd" />
+
+@if (!string.IsNullOrEmpty(_errorMessage))
+{
+    <p class="text-danger mt-2">@_errorMessage</p>
+}
+
+@if (!string.IsNullOrEmpty(_errorMessage))
+{
+    <p class="text-danger mt-2">@_errorMessage</p>
+}
+
+@code {
+    // STATE — like fields in a Flutter State<T> class
+    // null = not yet loaded (shows "Loading..."), empty list = loaded but empty
+    private List<TodoItem>? _todos;
+    private string _errorMessage = string.Empty;
+
+    // LIFECYCLE — like Flutter's initState()
+    // Called once when the component first renders; awaits async data before rendering
+    protected override async Task OnInitializedAsync()
+    {
+        _todos = await TodoService.GetAllAsync();
+    }
+
+    // COMMANDS — called by UI events above
+    // StateHasChanged() is called automatically after Blazor event handlers,
+    // so the UI re-renders as soon as these methods return.
+
+    private async Task HandleAdd(string title)
+{
+    try
+    {
+        await TodoService.CreateAsync(title);
+        _errorMessage = string.Empty;
+        _todos = await TodoService.GetAllAsync();
+    }
+    catch (ArgumentException ex)
+    {
+        _errorMessage = ex.Message;
+    }
+}
+    private async Task Toggle(int id)
+    {
+        await TodoService.ToggleCompleteAsync(id);
+        _todos = await TodoService.GetAllAsync();
+    }
+
+    private async Task Delete(int id)
+    {
+        await TodoService.DeleteAsync(id);
+        _todos = await TodoService.GetAllAsync();
+    }
+}

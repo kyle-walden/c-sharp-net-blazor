@@ -476,7 +476,14 @@ else
 ```
 
 ### 3.8 Practice Task
-Wire the Blazor Server frontend to your Todo API (Phase 2) using `HttpClient`, or share the EF Core DbContext directly (in Blazor Server you can do both).
+Build a Blazor Server app: a browser-based Todo manager backed by EF Core + SQLite. Decompose the UI into reusable components and cover all the key Blazor patterns:
+- **`Todos.razor`** — main list page: `@inject`, `OnInitializedAsync`, `@bind`, `@onclick`, `@foreach`
+- **`TodoCard.razor`** — child component: `[Parameter]`, `EventCallback<T>` firing back to parent
+- **`AddTodoForm.razor`** — form component: `<EditForm>`, `<DataAnnotationsValidator>`, `<InputText>`, `<ValidationMessage>`
+- **`TodoEdit.razor`** — edit page: `@page "/todos/{Id:int}/edit"`, `[Parameter]` route param, `NavigationManager`
+- **`ITodoService` / `TodoService`** — EF Core service registered with `AddScoped<>` in `Program.cs`
+
+---
 
 ## Testing & QA
 

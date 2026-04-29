@@ -1,0 +1,32 @@
+@* Components/TodoCard.razor *@
+@* Flutter analogy: a reusable widget that takes parameters and fires callbacks to its parent *@
+@using BlazorTodo.Models
+
+<li class="d-flex align-items-center gap-2 mb-2">
+    <input type="checkbox"
+           checked="@Todo.IsComplete"
+           @onchange="HandleToggle" />
+    <span style="@(Todo.IsComplete ? "text-decoration:line-through;color:gray;" : "")">
+        @Todo.Title
+    </span>
+    <a href="/todos/@Todo.Id/edit" class="btn btn-sm btn-outline-secondary">Edit</a>
+    <button class="btn btn-sm btn-outline-danger"
+            @onclick="HandleDelete">
+        Delete
+    </button>
+</li>
+
+@code {
+    // [Parameter] = widget constructor parameter in Flutter
+    // The parent sets this when it writes <TodoCard Todo="item" />
+    [Parameter] public TodoItem Todo { get; set; } = default!;
+
+    // EventCallback<T> = VoidCallback / Function(T) in Flutter
+    // The parent passes a handler; this component invokes it on user action.
+    // EventCallback automatically triggers StateHasChanged() on the parent — you don't need to.
+    [Parameter] public EventCallback<int> OnToggle { get; set; }
+    [Parameter] public EventCallback<int> OnDelete { get; set; }
+
+    private async Task HandleToggle() => await OnToggle.InvokeAsync(Todo.Id);
+    private async Task HandleDelete() => await OnDelete.InvokeAsync(Todo.Id);
+}

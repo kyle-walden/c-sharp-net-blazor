@@ -1,0 +1,45 @@
+@* Components/AddTodoForm.razor *@
+@* Flutter analogy: a Form widget with validators and a submit callback *@
+@using System.ComponentModel.DataAnnotations
+
+@* EditForm binds to a model object (not a plain string).
+   OnValidSubmit only fires when DataAnnotationsValidator passes all rules. *@
+<EditForm Model="_model" OnValidSubmit="HandleValidSubmit">
+    <DataAnnotationsValidator /> @* connects [Required]/[MaxLength] on _model to the form *@
+
+    <div class="d-flex gap-2 align-items-start">
+        <div>
+            @* InputText = TextFormField in Flutter; @bind-Value is two-way *@
+            <InputText class="form-control" @bind-Value="_model.Title" placeholder="New todo title..." />
+            @* ValidationMessage renders the error text when [Required]/[MaxLength] fails *@
+            <ValidationMessage For="@(() => _model.Title)" />
+        </div>
+        <button type="submit" class="btn btn-primary">Add</button>
+    </div>
+</EditForm>
+
+@code {
+    // The form model — EditForm tracks this object's state, not individual fields
+    private FormModel _model = new();
+
+    // EventCallback fires when the form is submitted with valid data
+    [Parameter] public EventCallback<string> OnAdd { get; set; }
+
+    private async Task HandleValidSubmit()
+    {
+        // Only reached when [Required] and [MaxLength] pass
+        await OnAdd.InvokeAsync(_model.Title);
+        _model = new FormModel(); // reset the form fields
+    }
+
+    // Replace AddTodo() with HandleAdd() in @code { }
+    // Also remove: private string _newTitle = string.Empty;
+
+    // Private nested class — keeps the form model close to the component that owns it
+    private class FormModel
+    {
+        [Required(ErrorMessage = "Title is required.")]
+        [MaxLength(200, ErrorMessage = "Title must be 200 characters or fewer.")]
+        public string Title { get; set; } = string.Empty;
+    }
+}

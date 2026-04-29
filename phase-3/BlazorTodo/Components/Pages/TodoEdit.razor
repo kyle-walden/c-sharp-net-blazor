@@ -1,0 +1,93 @@
+@* Pages/TodoEdit.razor *@
+@* Demonstrates: typed route param, NavigationManager, full EditForm *@
+@page "/todos/{Id:int}/edit"
+@inject ITodoService TodoService
+@inject NavigationManager Nav    
+@using BlazorTodo.Models
+@using BlazorTodo.Services
+@using System.ComponentModel.DataAnnotations
+
+<PageTitle>Edit Todo</PageTitle>
+
+@if (_todo is null && !_notFound)
+{
+    <p><em>Loading...</em></p>
+}
+else if (_notFound)
+{
+    <p class="text-danger">Todo not found.</p>
+    <a href="/todos">Back to list</a>
+}
+else
+{
+    <h1>Edit Todo</h1>
+
+    <EditForm Model="_form" OnValidSubmit="HandleSave">
+        <DataAnnotationsValidator />
+
+        <div class="mb-3">
+            <label class="form-label">Title</label>
+            <InputText class="form-control" @bind-Value="_form.Title" />
+            <ValidationMessage For="@(() => _form.Title)" />
+        </div>
+
+        <div class="mb-3 form-check">
+            <InputCheckbox class="form-check-input" @bind-Value="_form.IsComplete" id="isComplete" />
+            <label class="form-check-label" for="isComplete">Complete</label>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Save</button>
+        <a href="/todos" class="btn btn-secondary ms-2">Cancel</a>
+    </EditForm>
+
+    @if (!string.IsNullOrEmpty(_errorMessage))
+    {
+        <p class="text-danger mt-2">@_errorMessage</p>
+    }
+}
+
+@code {
+    // Route parameter — Blazor extracts {Id:int} from the URL and sets this property.
+    // Flutter/GoRouter analogy: GoRouterState.of(context).pathParameters['id']
+    [Parameter] public int Id { get; set; }
+
+    private TodoItem? _todo;
+    private bool _notFound;
+    private string _errorMessage = string.Empty;
+    private FormModel _form = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _todo = await TodoService.GetByIdAsync(Id);
+        if (_todo is null)
+        {
+            _notFound = true;
+            return;
+        }
+        // Pre-populate the form with the current values
+        _form = new FormModel { Title = _todo.Title, IsComplete = _todo.IsComplete };
+    }
+
+    private async Task HandleSave()
+    {
+        if (_todo is null) return;
+
+        await TodoService.UpdateTitleAsync(_todo.Id, _form.Title);
+
+        // Only toggle if the value changed
+        if (_form.IsComplete != _todo.IsComplete)
+            await TodoService.ToggleCompleteAsync(_todo.Id);
+
+        // Navigate back to the list — like Flutter's context.go('/todos')
+        Nav.NavigateTo("/todos");
+    }
+
+    private class FormModel
+    {
+        [Required(ErrorMessage = "Title is required.")]
+        [MaxLength(200, ErrorMessage = "Title must be 200 characters or fewer.")]
+        public string Title { get; set; } = string.Empty;
+
+        public bool IsComplete { get; set; }
+    }
+}
