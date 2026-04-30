@@ -634,7 +634,11 @@ jobs:
 
 ## Phase 4 — CQRS Pattern
 
+Command Query Responsibility Segregation (CQRS) is an architectural pattern that separates read operations (queries) from write operations (commands). Instead of having a single service class that handles both getting and modifying data, you create distinct handler classes for each operation. This leads to clearer separation of concerns, easier scaling and optimization for reads vs writes, and better organization as the app grows in complexity.
+
 > CQRS = separating reads (Queries) from writes (Commands). In Flask terms: instead of one service with get/create/update methods, you have separate handler classes per operation. Uses the **MediatR** library.
+> Benefits: clear separation of concerns, easier to scale and optimize reads vs writes, and better organization as the app grows.
+> Drawback: more boilerplate and complexity for simple apps — best for medium+ complexity.
 
 ### 4.1 The Problem CQRS Solves
 ```
