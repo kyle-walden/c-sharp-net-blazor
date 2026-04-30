@@ -636,7 +636,7 @@ jobs:
 
 Command Query Responsibility Segregation (CQRS) is an architectural pattern that separates read operations (queries) from write operations (commands). Instead of having a single service class that handles both getting and modifying data, you create distinct handler classes for each operation. This leads to clearer separation of concerns, easier scaling and optimization for reads vs writes, and better organization as the app grows in complexity.
 
-> CQRS = separating reads (Queries) from writes (Commands). In Flask terms: instead of one service with get/create/update methods, you have separate handler classes per operation. Uses the **MediatR** library.
+> CQRS = separating reads (Queries) from writes (Commands). In Flask terms: instead of one service with get/create/update methods, you have separate handler classes per operation. 
 > Benefits: clear separation of concerns, easier to scale and optimize reads vs writes, and better organization as the app grows.
 > Drawback: more boilerplate and complexity for simple apps — best for medium+ complexity.
 
@@ -653,6 +653,9 @@ have different scaling, caching, and validation needs.
 ```
 
 ### 4.2 CQRS with MediatR
+
+MediatR is a popular .NET library that implements the Mediator pattern, which is a key enabler for CQRS. It allows you to define "requests" (commands and queries) and "handlers" that process those requests. The rest of your app only interacts with the MediatR interface, decoupling the request definitions from their implementations.
+
 ```bash
 dotnet add package MediatR
 dotnet add package MediatR.Extensions.Microsoft.DependencyInjection
@@ -671,8 +674,8 @@ public record GetAllTodosQuery : IRequest<IEnumerable<TodoDto>>;
 // 2. Define the handler
 public class GetAllTodosHandler : IRequestHandler<GetAllTodosQuery, IEnumerable<TodoDto>>
 {
-    private readonly AppDbContext _db;
-    public GetAllTodosHandler(AppDbContext db) => _db = db;
+    private readonly AppDbContext _db; // EF Core DbContext for data access
+    public GetAllTodosHandler(AppDbContext db) => _db = db; // DI
 
     public async Task<IEnumerable<TodoDto>> Handle(
         GetAllTodosQuery request, CancellationToken ct)
@@ -705,7 +708,7 @@ public class CreateTodoHandler : IRequestHandler<CreateTodoCommand, TodoDto>
 }
 ```
 
-### 4.5 Dispatch from Controller or Blazor Component
+### 4.5 Dispatch from Controller OR Blazor Component
 ```csharp
 // Controller
 [ApiController]
